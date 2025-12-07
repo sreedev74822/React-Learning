@@ -11,8 +11,8 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1️⃣ Checkout repository
-      - name: Checkout code
+      # 1️⃣ Checkout the code
+      - name: Checkout repository
         uses: actions/checkout@v4
 
       # 2️⃣ Setup Node.js
@@ -29,37 +29,26 @@ jobs:
       - name: Lint code
         run: npm run lint
 
-      # 5️⃣ Build React App
+      # 5️⃣ Build React app
       - name: Build React App
         run: npm run build
 
-      # 6️⃣ Login to AWS ECR
-      - name: Login to AWS ECR
-        uses: aws-actions/amazon-ecr-login@v2
+      # 6️⃣ Sync build to S3
+      - name: Deploy to S3
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_REGION: ${{ secrets.AWS_REGION }}
-
-      # 7️⃣ Build Docker image
-      - name: Build Docker image
+          S3_BUCKET_NAME: ${{ secrets.S3_BUCKET_NAME }}
         run: |
-          docker build -t ${{ secrets.ECR_REPOSITORY }} .
-          docker tag ${{ secrets.ECR_REPOSITORY }}:latest ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ secrets.ECR_REPOSITORY }}:latest
+          aws s3 sync ./dist s3://$S3_BUCKET_NAME --delete
 
-      # 8️⃣ Push Docker image to ECR
-      - name: Push Docker image to ECR
-        run: |
-          docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ secrets.ECR_REPOSITORY }}:latest
-
-      # 9️⃣ Update ECS service
-      - name: Update ECS service
+      # 7️⃣ Invalidate CloudFront cache
+      - name: Invalidate CloudFront cache
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_REGION: ${{ secrets.AWS_REGION }}
+          CLOUDFRONT_ID: ${{ secrets.CLOUDFRONT_ID }}
         run: |
-          aws ecs update-service \
-            --cluster default \
-            --service react-vite-app-8e32 \
-            --force-new-deployment
+          aws cloudfront create-invalidation --distribution-id $CLOUDFRONT_ID --paths "/*"
