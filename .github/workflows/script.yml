@@ -41,6 +41,7 @@ jobs:
           AWS_REGION: ${{ secrets.AWS_REGION }}
         uses: aws-actions/amazon-ecr-login@v2
         with:
+          # Ensure registry URL is correct
           registries: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
 
       # 7️⃣ Build Docker image
