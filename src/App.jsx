@@ -5,7 +5,7 @@ function App() {
 
   return (
     <>
-      <div>hello sreedev</div>
+      <div>hello SREEDEV'SS</div>
     </>
   )
 }
